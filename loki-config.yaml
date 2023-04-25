@@ -1,0 +1,82 @@
+---
+auth_enabled: false
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+  log_level: debug
+
+memberlist:
+  join_members:
+    - loki:7946
+schema_config:
+  configs:
+    - from: 2021-08-01
+      store: tsdb
+      object_store: s3
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+storage_config:
+  tsdb_shipper:
+    active_index_directory: "/loki/tsdb-index"
+    cache_location: "/loki/tsdb-cache"
+    shared_store: s3
+common:
+  path_prefix: /loki
+  replication_factor: 1
+  storage:
+    s3:
+      endpoint: minio:9000
+      insecure: true
+      bucketnames: loki-data
+      access_key_id: loki
+      secret_access_key: supersecret
+      s3forcepathstyle: true
+  ring:
+    kvstore:
+      store: memberlist
+ruler:
+  storage:
+    s3:
+      bucketnames: loki-ruler
+ingester:
+  chunk_retain_period: 1h
+  chunk_encoding: zstd
+  wal:
+    flush_on_shutdown: true
+  index_shards: 64
+compactor:
+  working_directory: /loki/compactor
+  shared_store: s3
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  max_compaction_parallelism: 4
+  upload_parallelism: 20
+limits_config:
+  ingestion_rate_mb: 50
+  ingestion_burst_size_mb: 100
+  retention_period: 90d
+  split_queries_by_interval: 60m
+  query_timeout: 5m
+  per_stream_rate_limit: 50MB
+  per_stream_rate_limit_burst: 120MB
+  tsdb_max_query_parallelism: 1024
+  max_query_parallelism: 1024
+chunk_store_config:
+  max_look_back_period: 90d
+querier:
+  tail_max_duration: 10m
+  max_concurrent: 1024
+query_range:
+  max_retries: 10
+  cache_results: true
+  parallelise_shardable_queries: true
+  results_cache:
+    cache:
+      enable_fifocache: true
+      fifocache:
+        max_size_items: 2048000000
+        validity: 48h
